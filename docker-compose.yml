@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  load-balancer:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - HELIUS_API_KEY=${HELIUS_API_KEY}
+      - ALCHEMY_API_KEY=${ALCHEMY_API_KEY}
+      - QUICKNODE_TOKEN=${QUICKNODE_TOKEN}
+      - REDIS_URL=redis:6379
+    depends_on:
+      - redis
+    volumes:
+      - ./config:/app/config
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:

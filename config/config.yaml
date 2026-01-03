@@ -1,0 +1,46 @@
+server:
+  port: 8080
+  read_timeout: 30s
+  write_timeout: 30s
+
+providers:
+  - name: helius
+    url: https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}
+    priority: 1
+    cost_per_request: 0.0001
+  
+  - name: alchemy
+    url: https://solana-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}
+    priority: 2
+    cost_per_request: 0.00012
+  
+  - name: quicknode
+    url: https://dawn-frequent-owl.solana-devnet.quiknode.pro/${QUICKNODE_TOKEN}/
+    priority: 3
+    cost_per_request: 0.00015
+
+health:
+  check_interval: 5s
+  timeout: 2s
+  unhealthy_threshold: 3
+
+caching:
+  enabled: true
+  methods:
+    getSlot: 200ms
+    getBlockHeight: 500ms
+    getLatestBlockhash: 500ms
+    getEpochInfo: 1s
+
+routing:
+  strategy: round-robin
+  max_retries: 3
+  retry_backoff: 100ms
+
+circuit_breaker:
+  max_requests: 5
+  timeout: 60s
+
+redis:
+  url: redis:6379
+  db: 0
