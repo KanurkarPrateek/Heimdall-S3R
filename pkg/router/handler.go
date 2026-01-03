@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kanurkarprateek/rpc-load-balancer/pkg/health"
 	"github.com/kanurkarprateek/rpc-load-balancer/pkg/metrics"
 	"github.com/kanurkarprateek/rpc-load-balancer/pkg/pool"
 	"github.com/kanurkarprateek/rpc-load-balancer/pkg/provider"
@@ -141,5 +142,97 @@ func (h *Handler) HealthCheck(c *gin.Context) {
 		"status":    "healthy",
 		"providers": providerCount,
 		"timestamp": time.Now().Unix(),
+	})
+}
+
+// GetSystemStatus returns detailed status for all providers
+func (h *Handler) GetSystemStatus(c *gin.Context) {
+	providers := h.pool.GetAll()
+	breakerStatuses := h.retryHandler.GetBreakerStatuses()
+
+	type ProviderStatus struct {
+		Name         string  `json:"name"`
+		Healthy      bool    `json:"healthy"`
+		Latency      int64   `json:"latency_ms"`
+		BreakerState string  `json:"breaker_state"`
+		Cost         float64 `json:"cost_per_req"`
+	}
+
+	var statusList []ProviderStatus
+	for _, p := range providers {
+		// Get health from Redis
+		healthStatus, _ := health.GetProviderStatus(c.Request.Context(), h.pool.GetRedis(), p.Name())
+		isHealthy := healthStatus != nil && healthStatus.Healthy
+
+		// Get latency from Redis
+		latency, _ := h.pool.GetLatency(c.Request.Context(), p.Name())
+
+		statusList = append(statusList, ProviderStatus{
+			Name:         p.Name(),
+			Healthy:      isHealthy,
+			Latency:      latency,
+			BreakerState: breakerStatuses[p.Name()],
+			Cost:         p.CostPerRequest(),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"providers": statusList,
+		"timestamp": time.Now().Unix(),
+	})
+}
+
+// TripProvider handles manual circuit breaker tripping for demo
+func (h *Handler) TripProvider(c *gin.Context) {
+	providerName := c.Query("provider")
+	if providerName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "provider name is required"})
+		return
+	}
+	h.retryHandler.TripProvider(providerName)
+	c.JSON(http.StatusOK, gin.H{"status": "tripped", "provider": providerName})
+}
+
+// ResetChaos handles clearing manual overrides for demo
+func (h *Handler) ResetChaos(c *gin.Context) {
+	h.retryHandler.ResetChaos()
+	c.JSON(http.StatusOK, gin.H{"status": "reset"})
+}
+
+// TestRPC fires a dummy getSlot request through the system to show it in action
+func (h *Handler) TestRPC(c *gin.Context) {
+	req := provider.RPCRequest{
+		JSONRPC: "2.0",
+		ID:      time.Now().Unix(),
+		Method:  "getSlot",
+	}
+
+	start := time.Now()
+	resp, providerName, err := h.retryHandler.ExecuteWithRetry(c.Request.Context(), &req)
+	latency := time.Since(start)
+
+	if err != nil {
+		metrics.RequestsTotal.WithLabelValues(providerName, req.Method, "error").Inc()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Record success metrics & latency
+	metrics.RequestsTotal.WithLabelValues(providerName, req.Method, "success").Inc()
+	metrics.RequestDuration.WithLabelValues(providerName).Observe(latency.Seconds())
+	h.pool.UpdateLatency(c.Request.Context(), providerName, latency)
+
+	// Record cost
+	for _, p := range h.pool.GetAll() {
+		if p.Name() == providerName {
+			metrics.TotalCostUSD.WithLabelValues(providerName).Add(p.CostPerRequest())
+			break
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"provider": providerName,
+		"latency":  latency.String(),
+		"response": resp,
 	})
 }

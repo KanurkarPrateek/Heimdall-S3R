@@ -22,5 +22,13 @@ services:
     volumes:
       - redis-data:/data
 
+  dashboard:
+    build: 
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - load-balancer
+
 volumes:
   redis-data:

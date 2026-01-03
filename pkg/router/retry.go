@@ -15,6 +15,7 @@ import (
 type RetryHandler struct {
 	pool            *pool.ProviderPool
 	circuitBreakers map[string]*gobreaker.CircuitBreaker
+	forcedStates    map[string]string // "open" or "" (normal)
 }
 
 // NewRetryHandler creates a new retry handler
@@ -40,6 +41,7 @@ func NewRetryHandler(providerPool *pool.ProviderPool, providerNames []string) *R
 	return &RetryHandler{
 		pool:            providerPool,
 		circuitBreakers: cbs,
+		forcedStates:    make(map[string]string),
 	}
 }
 
@@ -49,11 +51,21 @@ func (r *RetryHandler) ExecuteWithRetry(ctx context.Context, req *provider.RPCRe
 	maxRetries := 3
 	backoff := 100 * time.Millisecond
 
+	tried := make(map[string]bool)
+
 	for attempt := 0; attempt < maxRetries; attempt++ {
-		// Get next healthy provider
-		prov, err := r.pool.Next(ctx)
+		// Get next healthy provider, excluding already tried ones in this request
+		prov, err := r.pool.NextWithExclude(ctx, tried)
 		if err != nil {
 			return nil, "", fmt.Errorf("failed to select provider: %w", err)
+		}
+
+		tried[prov.Name()] = true
+
+		// Check if forced into open state (Demo Chaos)
+		if r.forcedStates[prov.Name()] == "open" {
+			log.Printf("[CHAOS] Skipping provider %s (Forced Open)", prov.Name())
+			continue
 		}
 
 		cb, ok := r.circuitBreakers[prov.Name()]
@@ -90,4 +102,29 @@ func (r *RetryHandler) ExecuteWithRetry(ctx context.Context, req *provider.RPCRe
 	}
 
 	return nil, "", fmt.Errorf("max retries exceeded, last error: %v", lastErr)
+}
+
+// GetBreakerStatuses returns the current state of all circuit breakers
+func (r *RetryHandler) GetBreakerStatuses() map[string]string {
+	statuses := make(map[string]string)
+	for name, cb := range r.circuitBreakers {
+		state := cb.State().String()
+		if r.forcedStates[name] == "open" {
+			state = "FORCED OPEN"
+		}
+		statuses[name] = state
+	}
+	return statuses
+}
+
+// TripProvider manually forces a provider's circuit breaker to open (for demo)
+func (r *RetryHandler) TripProvider(name string) {
+	r.forcedStates[name] = "open"
+	log.Printf("[CHAOS] Provider %s manually TRIPPED", name)
+}
+
+// ResetChaos clears all manual overrides
+func (r *RetryHandler) ResetChaos() {
+	r.forcedStates = make(map[string]string)
+	log.Printf("[CHAOS] All manual overrides RESET")
 }

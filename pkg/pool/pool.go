@@ -48,10 +48,14 @@ func (p *ProviderPool) Next(ctx context.Context) (provider.Provider, error) {
 	}
 
 	// 2. Prioritize discovery: find providers without latency data
-	for _, prov := range healthyProviders {
+	// Use round-robin to ensure we discover ALL providers, not just the first one
+	for i := 0; i < len(healthyProviders); i++ {
+		idx := (p.current + i) % len(healthyProviders)
+		prov := healthyProviders[idx]
 		_, err := p.GetLatency(ctx, prov.Name())
 		if err != nil {
 			log.Printf("[ROUTING] Discovery: Selected healthy provider without latency data: %s", prov.Name())
+			p.current = (idx + 1) % len(healthyProviders)
 			return prov, nil
 		}
 	}
@@ -74,15 +78,69 @@ func (p *ProviderPool) Next(ctx context.Context) (provider.Provider, error) {
 		return bestProv, nil
 	}
 
-	// 4. Fallback to round-robin if no latency data
+	// 4. Fallback to round-robin if no latency data (should rarely hit here now)
 	selected := healthyProviders[p.current%len(healthyProviders)]
-	p.current = (p.current + 1) % len(p.providers)
+	p.current = (p.current + 1) % len(healthyProviders)
 	log.Printf("[ROUTING] Selected healthy provider (round-robin): %s", selected.Name())
 
 	return selected, nil
 }
 
-// GetLatency retrieves the latest recorded latency for a provider from Redis
+func (p *ProviderPool) NextWithExclude(ctx context.Context, exclude map[string]bool) (provider.Provider, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if len(p.providers) == 0 {
+		return nil, fmt.Errorf("no providers available")
+	}
+
+	// 1. Filter healthy providers
+	var candidateProviders []provider.Provider
+	for _, prov := range p.providers {
+		if exclude[prov.Name()] {
+			continue
+		}
+		status, err := health.GetProviderStatus(ctx, p.redis, prov.Name())
+		if err != nil || status == nil || status.Healthy {
+			candidateProviders = append(candidateProviders, prov)
+		}
+	}
+
+	if len(candidateProviders) == 0 {
+		return nil, fmt.Errorf("no un-tried healthy providers available")
+	}
+
+	// 2. Discovery
+	for i := 0; i < len(candidateProviders); i++ {
+		idx := (p.current + i) % len(candidateProviders)
+		prov := candidateProviders[idx]
+		_, err := p.GetLatency(ctx, prov.Name())
+		if err != nil {
+			p.current = (idx + 1) % len(candidateProviders)
+			return prov, nil
+		}
+	}
+
+	// 3. Least Latency
+	var bestProv provider.Provider
+	minLatency := int64(999999)
+	for _, prov := range candidateProviders {
+		latency, _ := p.GetLatency(ctx, prov.Name())
+		if latency > 0 && latency < minLatency {
+			minLatency = latency
+			bestProv = prov
+		}
+	}
+
+	if bestProv != nil {
+		return bestProv, nil
+	}
+
+	// 4. Round-robin
+	selected := candidateProviders[p.current%len(candidateProviders)]
+	p.current = (p.current + 1) % len(candidateProviders)
+	return selected, nil
+}
 func (p *ProviderPool) GetLatency(ctx context.Context, name string) (int64, error) {
 	if p.redis == nil {
 		return 0, fmt.Errorf("redis not initialized")
@@ -136,4 +194,9 @@ func (p *ProviderPool) ForwardRequest(ctx context.Context, req *provider.RPCRequ
 	}
 
 	return resp, prov.Name(), nil
+}
+
+// GetRedis returns the redis client used by the pool
+func (p *ProviderPool) GetRedis() *redis.Client {
+	return p.redis
 }

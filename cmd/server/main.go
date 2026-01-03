@@ -105,9 +105,25 @@ func main() {
 	r.Use(gin.Recovery())
 	r.Use(customLogger())
 
+	// Enable CORS
+	r.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
+	})
+
 	// Register routes
 	r.POST("/", handler.HandleRPC)                   // Main RPC endpoint
 	r.GET("/health", handler.HealthCheck)            // Health check endpoint
+	r.GET("/api/v1/status", handler.GetSystemStatus) // Dashboard status API
+	r.POST("/api/v1/chaos/trip", handler.TripProvider)
+	r.POST("/api/v1/chaos/reset", handler.ResetChaos)
+	r.POST("/api/v1/test-rpc", handler.TestRPC)      // Test RPC endpoint
 	r.GET("/metrics", gin.WrapH(promhttp.Handler())) // Real Prometheus metrics endpoint
 
 	// Create HTTP server
