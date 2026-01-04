@@ -16,7 +16,10 @@ interface SystemStatus {
     timestamp: number;
 }
 
-const API_BASE_URL = 'http://localhost:8080';
+// Automatically find the backend based on where the frontend is hosted
+// If running locally, this is localhost:8080
+// If on EC2 (e.g., 54.x.x.x:3000), this becomes 54.x.x.x:8080
+const API_BASE_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8080`;
 
 const App: React.FC = () => {
     const [status, setStatus] = useState<SystemStatus | null>(null);
