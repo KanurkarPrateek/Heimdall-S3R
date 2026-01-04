@@ -1,0 +1,348 @@
+/* ===================================
+   Heimdall S3R Documentation
+   Minimalist Technical Design (Slate/Zinc)
+   =================================== */
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ===================================
+   Design System
+   =================================== */
+:root {
+    /* Colors - Slate & Zinc Palette */
+    --bg-color: #09090b;
+    /* Zinc 950 */
+    --sidebar-bg: #09090b;
+    --card-bg: #18181b;
+    /* Zinc 900 */
+    --border-color: #27272a;
+    /* Zinc 800 */
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    /* Zinc 400 */
+    --accent-color: #3b82f6;
+    /* Blue 500 */
+    --accent-secondary: #0ea5e9;
+
+    --spacing-sidebar: 280px;
+    --radius-md: 6px;
+
+    --transition: 0.2s ease-in-out;
+}
+
+/* ===================================
+   Base Styles
+   =================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* ===================================
+   Layout
+   =================================== */
+.navbar {
+    display: none;
+    /* Removed for a sidebar-only layout */
+}
+
+.main-container {
+    display: flex;
+    max-width: 1440px;
+    margin: 0 auto;
+}
+
+/* Sidebar */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--spacing-sidebar);
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    padding: 2rem 1.5rem;
+    overflow-y: auto;
+}
+
+.sidebar-logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.sidebar-logo span {
+    color: var(--accent-color);
+}
+
+.nav-menu {
+    list-style: none;
+}
+
+.nav-item {
+    margin-bottom: 0.5rem;
+}
+
+.nav-link {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.nav-link:hover,
+.nav-link.active {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Main Content */
+.content-wrapper {
+    margin-left: var(--spacing-sidebar);
+    padding: 4rem 3.5rem;
+    flex: 1;
+    max-width: 800px;
+}
+
+/* ===================================
+   Typography
+   =================================== */
+h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: -0.025em;
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    margin-bottom: 2.5rem;
+}
+
+h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-top: 4rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+p {
+    margin-bottom: 1.25rem;
+    color: var(--text-secondary);
+}
+
+ul,
+ol {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+    color: var(--text-secondary);
+}
+
+li {
+    margin-bottom: 0.5rem;
+}
+
+/* ===================================
+   Components
+   =================================== */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    transition: var(--transition);
+}
+
+.card:hover {
+    border-color: var(--accent-color);
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.card-description {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+/* Feature/Image sections */
+.feature {
+    margin: 2.5rem 0;
+}
+
+.feature-image img {
+    width: 100%;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    background: #fff;
+    /* Good for excalidraw light style */
+    margin-top: 1rem;
+}
+
+/* Code Blocks */
+pre {
+    background: #09090b;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+}
+
+code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+}
+
+.alert {
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    margin: 1.5rem 0;
+    font-size: 0.95rem;
+}
+
+.alert-info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+}
+
+.alert-success {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.2);
+    color: #86efac;
+}
+
+.alert-error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 0.6rem 1.25rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: var(--transition);
+}
+
+.btn-primary {
+    background: var(--accent-color);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+}
+
+th {
+    text-align: left;
+    padding: 0.75rem;
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+/* Footer */
+.footer {
+    margin-top: 6rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 220px;
+    }
+
+    .content-wrapper {
+        margin-left: 220px;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        display: none;
+    }
+
+    .content-wrapper {
+        margin-left: 0;
+        padding: 2rem;
+    }
+}

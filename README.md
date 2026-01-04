@@ -1,188 +1,113 @@
-# RPC Load Balancer
+# Heimdall S3R
 
-A smart RPC load balancer for Solana that intelligently routes requests across multiple providers to optimize for cost, latency, and reliability.
+**Smart RPC Reliability Router Dashboard for Solana**
 
-## Features (Week 1 - MVP)
+Heimdall S3R is a high-performance middleware that intelligently routes Solana RPC requests across multiple providers (Helius, Alchemy, QuickNode) to optimize for cost, latency, and reliability.
 
-✅ **Multi-Provider Routing** (FR-1)
-- Support for Helius, Alchemy, and QuickNode providers
-- Round-robin routing strategy
-- Automatic provider selection
-- Request logging with provider information
-
-🚧 **Coming in Week 2-4:**
-- Health monitoring and automatic failover (FR-2, FR-3)
-- Cost tracking and optimization (FR-4)
-- Prometheus metrics and Grafana dashboards
-- Circuit breaker pattern
-- Docker Compose deployment
-
-## Quick Start
-
-### Prerequisites
-- Go 1.21+ installed
-- RPC provider API keys (Helius, Alchemy, or QuickNode)
-
-### Setup
-
-1. **Clone the repository**
-```bash
-cd /Users/prateekkanurkar/Documents/DeNova/rpc-load-balancer
+```mermaid
+graph TB
+    APP[Your dApp] --> LB[Heimdall S3R]
+    LB --> H[Helius]
+    LB --> A[Alchemy]
+    LB --> Q[QuickNode]
+    
+    style LB fill:#3b82f6,stroke:#1d4ed8,stroke-width:3px,color:#fff
 ```
 
-2. **Create environment file**
+## 🚀 Key Features
+
+| Feature | Benefit |
+|---------|---------|
+| **Multi-Provider Pool** | No vendor lock-in, instant failover |
+| **Auto-Failover** | Sub-10s detection and rerouting |
+| **Cost Optimization** | Save up to 50% on RPC bills |
+| **Full Observability** | Real-time Grafana dashboards |
+
+## 📦 Quick Start
+
+### Docker Compose (Recommended)
+
 ```bash
+git clone https://github.com/KanurkarPrateek/rpc-load-balancer.git
+cd rpc-load-balancer
+
 cp .env.example .env
+# Add your provider API keys to .env
+
+docker-compose up -d
 ```
 
-3. **Add your API keys to `.env`**
-```bash
-HELIUS_API_KEY=your_helius_api_key_here
-ALCHEMY_API_KEY=your_alchemy_api_key_here
-QUICKNODE_TOKEN=your_quicknode_token_here
-```
-
-4. **Load environment variables**
-```bash
-source .env
-```
-
-5. **Build and run**
-```bash
-go build -o rpc-load-balancer ./cmd/server
-./rpc-load-balancer
-```
-
-The server will start on `http://localhost:8080`
-
-## Usage
-
-### Send RPC Request
-
-```bash
-curl -X POST http://localhost:8080 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "getLatestBlockhash"
-  }'
-```
-
-### Check Health
+### Verify
 
 ```bash
 curl http://localhost:8080/health
 ```
 
-### Test Round-Robin Distribution
+## 🔌 dApp Integration
 
-```bash
-# Send 10 requests and watch the logs
-for i in {1..10}; do
-  curl -X POST http://localhost:8080 \
-    -H "Content-Type: application/json" \
-    -d '{"jsonrpc":"2.0","id":1,"method":"getHealth"}' &
-done
+Point your Solana client to Heimdall:
+
+```typescript
+import { Connection } from '@solana/web3.js';
+
+// Instead of: new Connection('https://mainnet.helius-rpc.com/...')
+const connection = new Connection('http://localhost:8080');
+
+// Use normally
+const balance = await connection.getBalance(publicKey);
 ```
 
-You should see requests distributed evenly across configured providers in the logs.
+## 🏗️ Architecture
 
-## Configuration
-
-Edit `config/config.yaml` to:
-- Add/remove providers
-- Change routing strategy (Week 2+)
-- Adjust retry settings (Week 3+)
-- Configure health check intervals (Week 2+)
-
-## Project Structure
-
-```
-rpc-load-balancer/
-├── cmd/
-│   └── server/
-│       └── main.go              # Application entry point
-├── pkg/
-│   ├── config/
-│   │   └── config.go            # Configuration loader
-│   ├── provider/
-│   │   ├── provider.go          # Provider interface
-│   │   ├── helius.go            # Helius implementation
-│   │   ├── alchemy.go           # Alchemy implementation
-│   │   └── quicknode.go         # QuickNode implementation
-│   ├── pool/
-│   │   └── pool.go              # Provider pool & routing
-│   └── router/
-│       └── handler.go           # HTTP request handler
-├── config/
-│   └── config.yaml              # Configuration file
-├── .env.example                 # Environment variables template
-├── .gitignore
-├── go.mod
-└── README.md
+```mermaid
+graph TB
+    subgraph "Heimdall S3R"
+        HTTP[HTTP Server] --> Pool[Provider Pool]
+        Pool --> CB[Circuit Breaker]
+        HM[Health Monitor] --> Redis[(Redis)]
+        Pool --> Redis
+    end
+    
+    CB --> H[Helius]
+    CB --> A[Alchemy]
+    CB --> Q[QuickNode]
 ```
 
-## Week 1 Acceptance Criteria
+## ☸️ Deployment Options
 
-- [x] Support Helius, Alchemy, and QuickNode providers
-- [x] Round-robin routing strategy
-- [x] Log each routing decision (provider selected)
-- [x] HTTP server accepting JSON-RPC requests
-- [x] Basic error handling and validation
-- [x] Configuration via YAML file
-- [ ] Test with 100 req/s (manual testing pending)
+| Method | Best For |
+|--------|----------|
+| **Docker Compose** | Development, small deployments |
+| **Kubernetes** | Production, high availability |
 
-## Development
+See [Full Documentation](https://kanurkarprateek.github.io/rpc-load-balancer/) for detailed deployment guides.
 
-### Run in Development Mode
+## 📖 Documentation
 
-```bash
-# Enable debug logging
-go run ./cmd/server
-```
+- [Getting Started](docs/index.html#getting-started)
+- [Architecture](docs/index.html#architecture)
+- [dApp Integration](docs/index.html#dapp-integration)
+- [Docker Deployment](docs/index.html#docker-deployment)
+- [Kubernetes Deployment](docs/index.html#kubernetes)
+- [API Reference](docs/index.html#api)
 
-### Test Endpoints
+## 🔧 Configuration
 
-```bash
-# Test invalid JSON
-curl -X POST http://localhost:8080 -d 'invalid-json'
+| Variable | Description |
+|----------|-------------|
+| `HELIUS_API_KEY` | Helius RPC API Key |
+| `ALCHEMY_API_KEY` | Alchemy RPC API Key |
+| `QUICKNODE_TOKEN` | QuickNode Token |
+| `REDIS_URL` | Redis connection URL |
 
-# Test missing method
-curl -X POST http://localhost:8080 \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1}'
+## 📊 Observability
 
-# Test wrong JSON-RPC version
-curl -X POST http://localhost:8080 \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"1.0","id":1,"method":"getHealth"}'
-```
+Access the dashboard at `http://localhost:80` after starting Docker Compose.
 
-## Next Steps
+## 🤝 Contributing
 
-### Week 2: Health Monitoring (FR-2)
-- Redis integration for health cache
-- Background health checking (every 5 seconds)
-- Exclude unhealthy providers from rotation
-- Prometheus health metrics
+Contributions welcome! See [Contributing Guide](CONTRIBUTING.md).
 
-### Week 3: Automatic Failover (FR-3)
-- Retry logic with exponential backoff
-- Circuit breaker pattern
-- Integration tests
+## 📄 License
 
-### Week 4: Observability & Cost Tracking (FR-4)
-- Full Prometheus instrumentation
-- Grafana dashboard (5 panels)
-- Cost tracking per provider
-- Docker Compose deployment
-
-## License
-
-MIT
-
----
-
-**Status**: ✅ Week 1 Complete - Multi-Provider Routing Working!
-# Heimdall-S3R
+MIT License © 2026

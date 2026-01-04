@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Heimdall S3R - Smart RPC Reliability Router Dashboard for Solana">
+    <title>Heimdall S3R | Documentation</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'dark' });</script>
+</head>
+
+<body>
+    <div class="main-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span>Heimdall</span> S3R
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="#introduction" class="nav-link">Introduction</a></li>
+                    <li class="nav-item"><a href="#getting-started" class="nav-link">Getting Started</a></li>
+                    <li class="nav-item"><a href="#architecture" class="nav-link">Architecture</a></li>
+                    <li class="nav-item"><a href="#configuration" class="nav-link">Configuration</a></li>
+                    <li class="nav-item"><a href="#usage" class="nav-link">Usage Guide</a></li>
+                    <li class="nav-item"><a href="#dapp-integration" class="nav-link">dApp Integration</a></li>
+                    <li class="nav-item"><a href="#docker-deployment" class="nav-link">Docker Deployment</a></li>
+                    <li class="nav-item"><a href="#kubernetes" class="nav-link">Kubernetes</a></li>
+                    <li class="nav-item"><a href="#api" class="nav-link">API Reference</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content-wrapper">
+            <!-- Introduction -->
+            <section id="introduction" class="section">
+                <h1>Heimdall S3R</h1>
+                <p class="hero-subtitle">Smart RPC Reliability Router Dashboard for Solana</p>
+
+                <p>Heimdall S3R is a high-performance middleware that sits between your Solana applications and multiple
+                    RPC providers. It intelligently routes requests to optimize for cost, latency, and reliability.</p>
+
+                <div class="mermaid">
+                    graph TB
+                    subgraph "Your Infrastructure"
+                    APP[Solana dApp/Service]
+                    LB[Heimdall S3R<br />★ Smart Routing<br />★ Health Monitoring<br />★ Cost Tracking]
+                    end
+
+                    subgraph "RPC Providers"
+                    H[Helius<br />$0.0001/req]
+                    A[Alchemy<br />$0.00012/req]
+                    Q[QuickNode<br />$0.00015/req]
+                    end
+
+                    APP -->|JSON-RPC Request| LB
+                    LB -->|Routes to Healthy| H
+                    LB -->|Failover| A
+                    LB -->|Backup| Q
+
+                    style LB fill:#3b82f6,stroke:#1d4ed8,stroke-width:3px,color:#fff
+                    style APP fill:#22c55e,stroke:#15803d,stroke-width:2px,color:#fff
+                </div>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-title">📡 Multi-Provider Pool</div>
+                        <div class="card-description">No vendor lock-in. Switch providers instantly.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">🛡️ Auto-Failover</div>
+                        <div class="card-description">Sub-10s failure detection and automatic rerouting.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">💰 Cost Optimizer</div>
+                        <div class="card-description">Save up to 50% with intelligent routing.</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">📊 Observability</div>
+                        <div class="card-description">Real-time Grafana dashboards for monitoring.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Getting Started -->
+            <section id="getting-started" class="section">
+                <h2>Getting Started</h2>
+                <p>Deploy the full stack in under 5 minutes using Docker Compose.</p>
+
+                <h3>Prerequisites</h3>
+                <ul>
+                    <li>Docker and Docker Compose</li>
+                    <li>At least one Solana RPC API Key (Helius, Alchemy, or QuickNode)</li>
+                </ul>
+
+                <h3>Quick Installation</h3>
+                <pre><code># Clone repository
+git clone https://github.com/KanurkarPrateek/rpc-load-balancer.git
+cd rpc-load-balancer
+
+# Configure environment
+cp .env.example .env
+nano .env  # Add your API keys
+
+# Start all services
+docker-compose up -d
+
+# Verify
+curl http://localhost:8080/health</code></pre>
+
+                <div class="alert alert-success">
+                    <strong>Success:</strong> Heimdall is now running at <code>http://localhost:8080</code>
+                </div>
+            </section>
+
+            <!-- Architecture -->
+            <section id="architecture" class="section">
+                <h2>Architecture</h2>
+                <p>Heimdall S3R operates as an intelligent proxy with multiple layers of reliability.</p>
+
+                <h3>System Components</h3>
+                <div class="mermaid">
+                    graph TB
+                    subgraph "Layer 1: HTTP Interface"
+                    HTTP[Gin HTTP Server<br />Port 8080]
+                    Handler[Request Handler]
+                    end
+
+                    subgraph "Layer 2: Routing Logic"
+                    Pool[Provider Pool<br />Round-Robin]
+                    Retry[Retry Handler<br />Exponential Backoff]
+                    CB[Circuit Breaker]
+                    end
+
+                    subgraph "Layer 3: Provider Abstraction"
+                    P1[Helius Provider]
+                    P2[Alchemy Provider]
+                    P3[QuickNode Provider]
+                    end
+
+                    subgraph "Layer 4: Health Monitor"
+                    HM[Health Monitor<br />Background Goroutine]
+                    Redis[(Redis Cache<br />5s TTL)]
+                    end
+
+                    HTTP --> Handler
+                    Handler --> Retry
+                    Retry --> CB
+                    CB --> Pool
+                    Pool --> P1
+                    Pool --> P2
+                    Pool --> P3
+
+                    HM -->|Probe| P1
+                    HM -->|Probe| P2
+                    HM -->|Probe| P3
+                    HM -->|Update| Redis
+                    Pool -->|Check Health| Redis
+
+                    style HTTP fill:#3b82f6,color:#fff
+                    style Pool fill:#22c55e,color:#fff
+                    style HM fill:#f59e0b,color:#fff
+                </div>
+
+                <h3>Request Flow</h3>
+                <div class="mermaid">
+                    sequenceDiagram
+                    participant Client
+                    participant Handler as Request Handler
+                    participant Pool as Provider Pool
+                    participant Redis
+                    participant Provider as RPC Provider
+
+                    Client->>Handler: POST / {method: "getLatestBlockhash"}
+                    Handler->>Pool: Get next provider
+                    Pool->>Redis: Check health status
+                    Redis-->>Pool: Helius: healthy ✓
+                    Pool-->>Handler: Use Helius
+                    Handler->>Provider: Forward RPC call
+                    Provider-->>Handler: Response
+                    Handler-->>Client: Return response
+
+                    Note over Handler,Provider: Total overhead: ~5ms
+                </div>
+
+                <h3>Automatic Failover</h3>
+                <div class="mermaid">
+                    stateDiagram-v2
+                    [*] --> NormalOperation
+
+                    NormalOperation: All Providers Healthy
+                    NormalOperation --> DetectFailure: Provider fails
+
+                    DetectFailure: Health Monitor Detects Issue
+                    DetectFailure --> AutoFailover: Mark as DOWN
+
+                    AutoFailover: Route to Healthy Providers
+                    AutoFailover --> Monitoring: Continue health checks
+
+                    Monitoring: Wait for Recovery
+                    Monitoring --> NormalOperation: Provider recovers
+                </div>
+            </section>
+
+            <!-- Configuration -->
+            <section id="configuration" class="section">
+                <h2>Configuration</h2>
+                <p>Configure Heimdall using environment variables or YAML files.</p>
+
+                <h3>Environment Variables</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Description</th>
+                            <th>Required</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>HELIUS_API_KEY</code></td>
+                            <td>Helius RPC API Key</td>
+                            <td>Optional*</td>
+                        </tr>
+                        <tr>
+                            <td><code>ALCHEMY_API_KEY</code></td>
+                            <td>Alchemy RPC API Key</td>
+                            <td>Optional*</td>
+                        </tr>
+                        <tr>
+                            <td><code>QUICKNODE_TOKEN</code></td>
+                            <td>QuickNode Token</td>
+                            <td>Optional*</td>
+                        </tr>
+                        <tr>
+                            <td><code>REDIS_URL</code></td>
+                            <td>Redis connection URL</td>
+                            <td>No</td>
+                        </tr>
+                        <tr>
+                            <td><code>PORT</code></td>
+                            <td>Server port</td>
+                            <td>No (default: 8080)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p><small>* At least one provider key is required</small></p>
+
+                <h3>YAML Configuration</h3>
+                <pre><code># config/config.yaml
+providers:
+  - name: helius
+    url: https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}
+    priority: 1
+    cost_per_request: 0.0001
+    enabled: true
+  
+  - name: alchemy
+    url: https://solana-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}
+    priority: 2
+    cost_per_request: 0.00012
+    enabled: true
+
+routing:
+  strategy: round-robin  # or: least-cost, least-latency
+  max_retries: 3
+  retry_backoff: 100ms
+  timeout: 5s
+
+health:
+  check_interval: 5s
+  unhealthy_threshold: 3</code></pre>
+            </section>
+
+            <!-- Usage -->
+            <section id="usage" class="section">
+                <h2>Usage Guide</h2>
+                <p>Point your Solana client to Heimdall instead of directly to an RPC provider.</p>
+
+                <h3>Basic Request</h3>
+                <pre><code>curl -X POST http://localhost:8080 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "getLatestBlockhash"
+  }'</code></pre>
+
+                <h3>Health Check</h3>
+                <pre><code>curl http://localhost:8080/health
+
+# Response:
+{
+  "status": "healthy",
+  "providers": {
+    "helius": "healthy",
+    "alchemy": "healthy",
+    "quicknode": "degraded"
+  }
+}</code></pre>
+            </section>
+
+            <!-- dApp Integration -->
+            <section id="dapp-integration" class="section">
+                <h2>dApp Integration</h2>
+                <p>Integrate Heimdall S3R with your Solana dApp in minutes.</p>
+
+                <h3>Integration Architecture</h3>
+                <div class="mermaid">
+                    graph LR
+                    subgraph "Your dApp"
+                    FE[Frontend<br />React/Next.js]
+                    BE[Backend API<br />Node.js]
+                    end
+
+                    subgraph "Heimdall"
+                    LB[Load Balancer<br />:8080]
+                    end
+
+                    subgraph "Providers"
+                    H[Helius]
+                    A[Alchemy]
+                    end
+
+                    FE -->|@solana/web3.js| LB
+                    BE -->|Direct RPC| LB
+                    LB --> H
+                    LB --> A
+
+                    style LB fill:#3b82f6,color:#fff
+                </div>
+
+                <h3>JavaScript / TypeScript</h3>
+                <pre><code>import { Connection, clusterApiUrl } from '@solana/web3.js';
+
+// Before: Direct to provider
+// const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=xxx');
+
+// After: Through Heimdall
+const connection = new Connection('http://localhost:8080');
+
+// Use normally
+const blockHeight = await connection.getBlockHeight();
+const balance = await connection.getBalance(publicKey);</code></pre>
+
+                <h3>Python</h3>
+                <pre><code>from solana.rpc.api import Client
+
+# Point to Heimdall instead of direct provider
+client = Client("http://localhost:8080")
+
+# Use normally
+response = client.get_latest_blockhash()
+print(response)</code></pre>
+
+                <h3>Rust</h3>
+                <pre><code>use solana_client::rpc_client::RpcClient;
+
+// Connect through Heimdall
+let client = RpcClient::new("http://localhost:8080");
+
+// Use normally
+let blockhash = client.get_latest_blockhash()?;</code></pre>
+            </section>
+
+            <!-- Docker Deployment -->
+            <section id="docker-deployment" class="section">
+                <h2>Docker Deployment</h2>
+                <p>Production-ready Docker Compose deployment.</p>
+
+                <h3>Deployment Architecture</h3>
+                <div class="mermaid">
+                    graph TB
+                    subgraph "Docker Compose Stack"
+                    subgraph "Container 1"
+                    LB[Heimdall S3R<br />Port 8080]
+                    end
+
+                    subgraph "Container 2"
+                    R[Redis<br />Port 6379]
+                    end
+
+                    subgraph "Container 3"
+                    G[Dashboard<br />Port 80]
+                    end
+                    end
+
+                    subgraph "External"
+                    H[Helius API]
+                    A[Alchemy API]
+                    Q[QuickNode API]
+                    end
+
+                    Client[Your dApp] --> LB
+                    LB --> R
+                    LB --> H
+                    LB --> A
+                    LB --> Q
+                    User --> G
+
+                    style LB fill:#22c55e,color:#fff
+                    style R fill:#dc2626,color:#fff
+                </div>
+
+                <h3>docker-compose.yml</h3>
+                <pre><code>version: '3.8'
+
+services:
+  load-balancer:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - HELIUS_API_KEY=${HELIUS_API_KEY}
+      - ALCHEMY_API_KEY=${ALCHEMY_API_KEY}
+      - QUICKNODE_TOKEN=${QUICKNODE_TOKEN}
+      - REDIS_URL=redis:6379
+    depends_on:
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  dashboard:
+    build: ./frontend
+    ports:
+      - "80:3000"
+    depends_on:
+      - load-balancer
+
+volumes:
+  redis-data:</code></pre>
+
+                <h3>Production Commands</h3>
+                <pre><code># Start in background
+docker-compose up -d
+
+# View logs
+docker-compose logs -f load-balancer
+
+# Scale (if needed)
+docker-compose up -d --scale load-balancer=3
+
+# Stop
+docker-compose down</code></pre>
+            </section>
+
+            <!-- Kubernetes -->
+            <section id="kubernetes" class="section">
+                <h2>Kubernetes Deployment</h2>
+                <p>Deploy Heimdall S3R to Kubernetes for production scale.</p>
+
+                <h3>Kubernetes Architecture</h3>
+                <div class="mermaid">
+                    graph TB
+                    subgraph "Kubernetes Cluster"
+                    subgraph "Ingress"
+                    ING[Ingress Controller<br />nginx/traefik]
+                    end
+
+                    subgraph "Heimdall Namespace"
+                    SVC[Service<br />ClusterIP]
+                    D1[Pod: Heimdall]
+                    D2[Pod: Heimdall]
+                    D3[Pod: Heimdall]
+                    HPA[HPA<br />2-10 replicas]
+                    end
+
+                    subgraph "Data"
+                    REDIS[Redis<br />StatefulSet]
+                    end
+                    end
+
+                    Client --> ING
+                    ING --> SVC
+                    SVC --> D1
+                    SVC --> D2
+                    SVC --> D3
+                    HPA -.-> D1
+                    D1 --> REDIS
+                    D2 --> REDIS
+                    D3 --> REDIS
+
+                    style SVC fill:#3b82f6,color:#fff
+                    style D1 fill:#22c55e,color:#fff
+                    style D2 fill:#22c55e,color:#fff
+                    style D3 fill:#22c55e,color:#fff
+                </div>
+
+                <h3>Deployment Manifest</h3>
+                <pre><code># heimdall-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: heimdall-s3r
+  namespace: rpc-infra
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: heimdall-s3r
+  template:
+    metadata:
+      labels:
+        app: heimdall-s3r
+    spec:
+      containers:
+      - name: heimdall
+        image: your-registry/heimdall-s3r:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: HELIUS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rpc-secrets
+              key: helius-api-key
+        - name: ALCHEMY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rpc-secrets
+              key: alchemy-api-key
+        - name: REDIS_URL
+          value: "redis-master:6379"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: heimdall-svc
+spec:
+  selector:
+    app: heimdall-s3r
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: heimdall-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: heimdall-s3r
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70</code></pre>
+
+                <h3>Secrets</h3>
+                <pre><code># Create secrets
+kubectl create secret generic rpc-secrets \
+  --from-literal=helius-api-key=YOUR_KEY \
+  --from-literal=alchemy-api-key=YOUR_KEY \
+  -n rpc-infra</code></pre>
+
+                <h3>Ingress</h3>
+                <pre><code># heimdall-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: heimdall-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  rules:
+  - host: rpc.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: heimdall-svc
+            port:
+              number: 8080</code></pre>
+
+                <h3>Deploy Commands</h3>
+                <pre><code># Apply all manifests
+kubectl apply -f heimdall-deployment.yaml
+kubectl apply -f heimdall-ingress.yaml
+
+# Check status
+kubectl get pods -n rpc-infra
+kubectl get hpa -n rpc-infra
+
+# View logs
+kubectl logs -f deployment/heimdall-s3r -n rpc-infra</code></pre>
+            </section>
+
+            <!-- API Reference -->
+            <section id="api" class="section">
+                <h2>API Reference</h2>
+
+                <h3>Endpoints</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>Path</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>POST</td>
+                            <td><code>/</code></td>
+                            <td>Forward JSON-RPC request to provider</td>
+                        </tr>
+                        <tr>
+                            <td>GET</td>
+                            <td><code>/health</code></td>
+                            <td>Health check endpoint</td>
+                        </tr>
+                        <tr>
+                            <td>GET</td>
+                            <td><code>/metrics</code></td>
+                            <td>Prometheus metrics</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Footer -->
+            <footer class="footer">
+                <p>Heimdall S3R | Smart RPC Reliability Router | MIT License © 2026</p>
+            </footer>
+        </main>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+</body>
+
+</html>

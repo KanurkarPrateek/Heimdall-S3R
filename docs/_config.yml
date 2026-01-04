@@ -1,0 +1,20 @@
+# GitHub Pages Configuration
+# This file ensures proper Jekyll processing for GitHub Pages
+
+# Theme (using default as we have custom CSS)
+theme: jekyll-theme-minimal
+
+# Exclude files from processing
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+
+# Site settings
+title: RPC Load Balancer Documentation
+description: Smart routing for Solana RPC providers with cost optimization and automatic failover
+baseurl: "/rpc-load-balancer"
+url: "https://kanurkarprateek.github.io"
+
+# Build settings
+markdown: kramdown
