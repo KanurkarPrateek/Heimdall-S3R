@@ -41,7 +41,7 @@ const App: React.FC = () => {
             }
         } catch (err) {
             console.error("Failed to fetch status:", err);
-            setError("Disconnected from Backend");
+            setError(`Disconnected from ${API_BASE_URL}`);
         }
     };
 
